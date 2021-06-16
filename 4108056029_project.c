@@ -1,31 +1,59 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-
+int search(char* str,char (* table)[10],int n){
+    for(int i=0;i<n;i++){
+        if(strcmp(str,table[i])==0){
+            return 1;
+        }
+    }
+    return 0;
+}
+void opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[10],int* opcode_address){
+    size_t len = 0;
+    ssize_t read;
+    char *line = NULL;
+    char* p;
+    int counter=0;
+    while ((read = getline(&line, &len, fptr_opcode) != -1)){
+        p = strtok(line,"\t");
+        if(p){
+            strcpy(opcode_table[counter]," ");
+            p = strtok(line," ");
+            if(p){
+                opcode_address[counter++]=(int)strtol(p, NULL, 16);
+            }
+        }
+    }
+}
 int main(){
     size_t len = 0;
     ssize_t read;
     char *line = NULL;
     FILE *fptr_source;
-    FILE *fptr_opcaode;
+    FILE *fptr_opcode;
     FILE *fptr_location;
     FILE *fptr_SYMTAB;
     int location_counter;
     int counter = 0;
-    char label[100][10];
+    char label [100][10];
     char opcode[100][10];
     char operand[100][10];
     int address[100];
 
+    char opcode_table[100][10];
+    int opcode_address[100];
+
     fptr_source = fopen("source.txt","r");
-    fptr_opcaode = fopen("opcode.txt","r");
+    fptr_opcode = fopen("opcode.txt","r");
     fptr_location= fopen("location.txt","w");
     fptr_SYMTAB = fopen("symbol_table.txt","w");
-    if (fptr_source == NULL || fptr_opcaode==NULL ||fptr_location==NULL){
+    if ((fptr_source == NULL || fptr_opcode==NULL) ||(fptr_location==NULL || fptr_opcode==NULL)){
         printf("File Not Found");
         return 0;
     }
     else{
+        opcode_table_read(fptr_opcode,opcode_table,opcode_address);
         if((read = getline(&line, &len, fptr_source) != -1)){//first line
             char* p_label,*p_opcode,*p_operand;
             if(line[0]=='\t'){           //two block(no label)
@@ -35,8 +63,14 @@ int main(){
             else{                          //three block
                 p_label = strtok(line,"\t");
                 if(p_label){                      //label
-                    strcpy(label[counter], p_label);
-                    p_opcode=strtok(NULL,"\t");
+                    if(search(p_label,label,counter)==1){
+                        printf("error\n");
+                        return 0;
+                    }
+                    else{
+                        strcpy(label[counter], p_label);
+                        p_opcode=strtok(NULL,"\t");
+                    }
                 }
             }
             if(p_opcode){                  //opcode
@@ -85,11 +119,37 @@ int main(){
             else{                          //three block
                 p_label = strtok(line,"\t");
                 if(p_label){                      //label
-                    strcpy(label[counter], p_label);
-                    p_opcode=strtok(NULL,"\t");
+                    if(search(p_label,label,counter)==1){
+                        printf("error\n");
+                        return 0;
+                    }
+                    else{
+                        strcpy(label[counter], p_label);
+                        p_opcode=strtok(NULL,"\t");
+                    }
                 }
             }
             if(p_opcode){                          //opcode
+                if(search(p_opcode,opcode_table,counter)==1){
+                    address[counter]=location_counter;
+                    //location_counter=address[counter];
+                    counter++;
+                    location_counter+=3;
+                }
+                else{
+                    if(strcmp(p_opcode,"WORD")==0){
+                        address[counter]=location_counter;
+                        //location_counter=address[counter];
+                        counter++;
+                        location_counter+=3;
+                    }
+                    else{
+                        address[counter]=location_counter;
+                        //location_counter=address[counter];
+                        counter++;
+                        location_counter+=1;
+                    }
+                }
                 strcpy(opcode[counter], p_opcode);
                 p_operand=strtok(NULL,"\t");
                 if(p_operand){                      //address
@@ -98,17 +158,24 @@ int main(){
                 else{                      //no address
                     strcpy(operand[counter],"\t");//no operand
                 }
+                if(strcmp(p_opcode,"END")==0){
+                    address[counter]=location_counter;
+                    location_counter=address[counter];
+                    counter++;
+                    break;
+                 }
             }
             else{                      //no opcode and operand
                 strcpy(opcode[counter],"\t");
                 strcpy(operand[counter],"\t");
+                address[counter]=location_counter;
+                //location_counter=address[counter];
+                counter++;
+                location_counter+=3;
             }
 
-            address[counter]=location_counter;
-            location_counter=address[counter];
-            counter++;
-            location_counter+=3;
-            fflush(stdin);
+
+            //fflush(stdin);
         }
         char *tmp = NULL;
         for(int i=0;i<counter;i++){
@@ -130,7 +197,7 @@ int main(){
         }
         //printf("\n", );
         fclose(fptr_source);
-        fclose(fptr_opcaode);
+        fclose(fptr_opcode);
         fclose(fptr_location);
         fclose(fptr_SYMTAB);
         if (line){
