@@ -6,39 +6,39 @@
 void Trim(char *);
 
 /** search()
-  * search a char* str in char (* table)[10], if exsit return 1, else return 0; */
-int search(char* ,char (* )[10],int);
+  * search a char* str in char (* table)[50], if exsit return 1, else return 0; */
+int search(char* ,char (* )[50],int);
 
 /** opcode_table_read()
-  * turn opcode.txt(fptr_opcode) into char opcode_table[100][10] , return the number of lines in opcode_table */
-int opcode_table_read(FILE* ,char (* )[10],int* );
+  * turn opcode.txt(fptr_opcode) into char opcode_table[100][50] , return the number of lines in opcode_table */
+int opcode_table_read(FILE* ,char (* )[50],int* );
 
 /** pass_1()
   * build a symbol table with location and write in symbol_table.txt(fptr_SYMTAB)
-  * symbol table            : char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address
+  * symbol table            : char (* label)[50],char (* opcode)[50],char (* operand)[50],char (* opcode_table)[50],int* address
   * int opcode_table_n      : number of lines in opcode table
   * int n                   : number of lines in source code
   * int* location_counter   : after this function, location_counter == last location
   * return                  : the number of lines in opcode_table from START to END */
-int pass_1(FILE*,FILE*,FILE*,char (*)[10],char (* )[10],char (*)[10],char (* )[10],int* ,int,int* );
-int location_count(FILE* ,FILE* ,char (* )[10],char (*)[10],char (*)[10],char (*)[10],int*,int,int*,int);
+int pass_1(FILE*,FILE*,FILE*,char (*)[50],char (* )[50],char (*)[50],char (* )[50],int* ,int,int* );
+int location_count(FILE* ,FILE* ,char (* )[50],char (*)[50],char (*)[50],char (*)[50],int*,int,int*,int);
 
-/** search_opcode_address()
-  * int search_opcode_address(char* str,char (* table)[10],int* address,int opcode_table_n)
-  * search a string(char* str) in a table (char (* table)[10]), if exsit return its location(address[x]), else return -1; */
-int search_opcode_address(char* ,char (* )[10],int* ,int );
+/** search_address()
+  * int search_address(char* str,char (* table)[50],int* address,int opcode_table_n)
+  * search a string(char* str) in a table (char (* table)[50]), if exsit return its location(address[x]), else return -1; */
+int search_address(char* ,char (* )[50],int* ,int );
 
 /** object_program_build()
-  * void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[10],char (* opcode)[10],char (* operand)[10],int* address,char (* opcode_table)[10],int* opcode_address,int location_counter,int opcode_table_n,int symbol_table_n)
+  * void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n)
   * make a source program with location and object code to object_code.txt(FILE* fptr_object_code),
   * and make a object program to object_program.txt(FILE* fptr_object_program)
 
-  * symbol table            : char (* label)[10],char (* opcode)[10],char (* operand)[10],int* address
-  * opcode table            : char (* opcode_table)[10],int* opcode_address
+  * symbol table            : char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address
+  * opcode table            : char (* opcode_table)[50],int* opcode_address
 
   * int location_counter    : last location
-  * int symbol_table_n      : number of lines in source code from START to END */
-void object_program_build(FILE* ,FILE* ,char (* )[10],char (* )[10],char (* )[10],int*,char (* )[10],int*,int,int,int);
+  * int n      : number of lines in source code from START to END */
+void object_program_build(FILE* ,FILE* ,char (* )[50],char (* )[50],char (* )[50],int*,char (* )[50],int*,int,int,int);
 
 
 int main(){
@@ -54,18 +54,14 @@ int main(){
     int location_counter;
 
     //symbol table
-    char label[100][10];
-    char opcode[100][10];
-    char operand[100][10];
+    char label[100][50];
+    char opcode[100][50];
+    char operand[100][50];
     int address[100];
 
     //opcode table
-    char opcode_table[100][10];
+    char opcode_table[100][50];
     int opcode_address[100];
-
-    //object code
-    int object_code[100];
-    char object_program[100][100];
 
     fptr_source = fopen("source.txt","r");
     fptr_opcode = fopen("opcode.txt","r");
@@ -84,13 +80,18 @@ int main(){
         //lines in source code
         //int n = source_read(fptr_source,label,opcode,operand);
         //lines in source code from START to END
-        //int symbol_table_n = symbol_table_build(fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,n,&location_counter);
-        //int symbol_table_n = pass_1();
-        int  symbol_table_n =pass_1(fptr_source, fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,&location_counter);
-        //printf("%d\n",symbol_table_n );
+        //int n = symbol_table_build(fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,n,&location_counter);
+        //int n = pass_1();
+        int  n =pass_1(fptr_source, fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,&location_counter);
+        if(n<=0) return 0;
+        //printf("%d\n",n );
         //printf("pass 2\n");
         //pass 2
-        object_program_build(fptr_object_code,fptr_object_program,label,opcode,operand,address,opcode_table,opcode_address,location_counter,opcode_table_n,symbol_table_n);
+
+        //object code
+        int object_code[n];
+        char object_program[n][100];
+        object_program_build(fptr_object_code,fptr_object_program,label,opcode,operand,address,opcode_table,opcode_address,location_counter,opcode_table_n,n);
         //printf("pass over\n");
         fclose(fptr_source);
         fclose(fptr_opcode);
@@ -122,7 +123,7 @@ void Trim(char *src){
     *src = '\0';
     return;
 }
-int search(char* str,char (* table)[10],int n){
+int search(char* str,char (* table)[50],int n){
     for(int i=0;i<n;i++){
         if(strcmp(str,table[i])==0){
             return 1;
@@ -130,7 +131,7 @@ int search(char* str,char (* table)[10],int n){
     }
     return 0;
 }
-int opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[10],int* opcode_address){//build opcode_table
+int opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[50],int* opcode_address){//build opcode_table
     size_t len = 0;
     ssize_t read;
     char *line = NULL;
@@ -152,7 +153,7 @@ int opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[10],int* opcode_ad
     }
     return counter;
 }
-int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address,int opcode_table_n,int* location_counter){
+int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[50],char (* opcode)[50],char (* operand)[50],char (* opcode_table)[50],int* address,int opcode_table_n,int* location_counter){
     size_t len = 0;
     ssize_t read;
     int counter = 0;
@@ -205,6 +206,10 @@ int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label
                 address[0] = *location_counter;
                 //start=1;
             }
+            else{
+                *location_counter=0;
+                address[0] = 0;
+            }
             if(strcmp(label[0],"\t")==0) {
                 fprintf(fptr_location,"%X\t\t%s\t%s\n",address[0],opcode[0],operand[0] );
             }
@@ -252,14 +257,16 @@ int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label
             strcpy(opcode[counter],"\t\0");
             strcpy(operand[counter],"\t\0");
         }
-        location_count(fptr_SYMTAB,fptr_location,label,opcode,operand, opcode_table,address,opcode_table_n,location_counter,counter);
+        int result = location_count(fptr_SYMTAB,fptr_location,label,opcode,operand, opcode_table,address,opcode_table_n,location_counter,counter);
+        if(result==-1) return counter+1;
+        if(result==-2) return 0;
         counter++;
     }
     fclose(fptr_location);
     fclose(fptr_SYMTAB);
     return counter;
 }
-int location_count(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address,int opcode_table_n,int* location_counter,int i){
+int location_count(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[50],char (* opcode)[50],char (* operand)[50],char (* opcode_table)[50],int* address,int opcode_table_n,int* location_counter,int i){
         if(strcmp(opcode[i],"END")==0) {
             fprintf(fptr_location,"\t\t%s\t%s\n",opcode[i],operand[i] );
             return -1;
@@ -305,7 +312,7 @@ int location_count(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char
         }
         return 0;
 }
-int search_opcode_address(char* str,char (* table)[10],int* address,int opcode_table_n){
+int search_address(char* str,char (* table)[50],int* address,int opcode_table_n){
     for(int i=0;i<opcode_table_n;i++){
         if(strcmp(str,table[i])==0){
             return address[i];
@@ -313,87 +320,106 @@ int search_opcode_address(char* str,char (* table)[10],int* address,int opcode_t
     }
     return -1;
 }
-void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[10],char (* opcode)[10],char (* operand)[10],int* address,char (* opcode_table)[10],int* opcode_address,int location_counter,int opcode_table_n,int symbol_table_n){
-    //printf("%d\n",symbol_table_n );
+void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n){
+    /** start           : start line, if first line's opcode is START,then start=1
+      * lines           : at object program's which line
+      * opcode_num      : use search_address() search opcode in opcode table
+      * operand_num     : use search_address() search operand in symbol table
+      * object_program  : final object object_program
+      * object_code     : each comment line's object code
+      * newline         : 1 =>is the head of line in object program
+    */
     int start=0,lines=0;
-    int opcode_num;
-    int operand_num;
-    char object_program[100][100];
-    int object_code[100];
+    int opcode_num,operand_num;
+    char object_program[n][100];
+    int object_code[n];
     int newline=0;
+
     //first line
     if(strcmp(opcode[0],"START")==0){
-        start=1;
-        lines=1;
+        start=1;    //other line is start at 1
+        lines++;    //move to next line
+        //col 1 :  Header record
         object_program[0][0] = 'H';
-        //name (1-6)
+        //col 1-6 : name
         for(int j=1;j<=6;j++){
             if(j<=strlen(label[0]))object_program[0][j] = label[0][j-1];
             else object_program[0][j] = ' ';
         }
-        //starting address (7-12)
+        //col 7-12 : starting address
         sprintf(&object_program[0][7],"%06X",address[0]);
-        //length (13-18)
-        int len = location_counter-address[0];
+
+        //col 13-18 : length
+        int len = location_counter-address[0];//location_counter == last location
         sprintf(&object_program[0][13], "%06X",len );
-        //printf("%s\n",object_program[0]);
+
+        //print to object_program.txt and object_code.txt
         fprintf(fptr_object_program, "%s\n",object_program[0]);
         fprintf(fptr_object_code,"%X\t%s\t%s\t%s\n",address[0],label[0],opcode[0],operand[0]);
     }
 
     //initialize first text record
-    //int start_address = address[start];
-    int col;
-    //int lines=1;
-    //int start_col=8;
-    int start_address = address[start];
+    int col;    //now is at which col
+    int start_address = address[start]; //this line's starting address
+    //col 1 : Text record
     object_program[lines][0] = 'T';
-    //starting address (1-6)
+    //col 1-6 : starting address
     sprintf(&object_program[lines][1],"%06X",address[start]);
-    sprintf(&object_program[lines][7],"%02X",0);
+    //col 7-8 : Length of object code in this record in bytes
+    sprintf(&object_program[lines][7],"%02X",0);//initialize length to 00, later count it real length
+    //col 9-68 : Object code (hex) (2 columns per byte)
     col=9;
-    for(int i=start;;i++){
-        if(i==symbol_table_n-1){
-            if(strcmp(label[i],"\t")==0) {
+    for(int i=start;i<n;i++){
+
+        //last line (END)
+        if(strcmp(opcode[i],"END")==0) {
+            if(strcmp(label[i],"\t")==0) {//no label
                 fprintf(fptr_object_code,"\t\t%s\t%s\n",opcode[i],operand[i]);
             }
             else fprintf(fptr_object_code,"\t%s\t%s\t%s\n",label[i],opcode[i],operand[i]);
-            //printf("in\n");
-            object_code[i]=-1;
-            char string_copy_temp[100];
-            int len = location_counter-start_address;
-            //printf("len %X\n",len );
-            //printf("address : %X start_address : %X\n",location_counter,start_address );
-            //itoa(len,string_copy_temp,16);
-            sprintf(string_copy_temp,"%02X",len);
-            for(int k=0;k<2;k++){
+
+            //col 7-8 : Length of object code in this record in bytes
+            //turn length from int into string, so it can insert in object_program[lines]
+            char string_copy_temp[100];              //a temp string to save length
+            int len = location_counter-start_address;//length
+            sprintf(string_copy_temp,"%02X",len);    //turn length from int into string
+            for(int k=0;k<2;k++){                    //insert in object_program[lines]
                 object_program[lines][k+7] = string_copy_temp[k];
             }
-            //printf("%s\n",object_program[lines]);
+
+            //print to object_program.txt
             fprintf(fptr_object_program, "%s\n",object_program[lines]);
             lines++;
-            //start=8;
-            //start_col = 8;
-            object_program[lines][0] = 'E';
-            //starting address (1-6)
-            sprintf(&object_program[lines][1],"%06X",address[0]);
-            //printf("%s\n",object_program[lines]);
-            fprintf(fptr_object_program, "%s\n",object_program[lines]);
 
-            break;
+            //End record
+            //col 1
+            object_program[lines][0] = 'E';
+
+            //col 1-6 : starting address
+            sprintf(&object_program[lines][1],"%06X",address[0]);
+
+            //print to object_program.txt
+            fprintf(fptr_object_program, "%s\n",object_program[lines]);
+            return;
         }
-        //printf("i  = %d\n",i );
-        opcode_num = search_opcode_address(opcode[i],opcode_table,opcode_address,opcode_table_n);
+
+        //search opcode in opcode table
+        opcode_num = search_address(opcode[i],opcode_table,opcode_address,opcode_table_n);
+        // if exist in opcode table
         if(opcode_num!=-1){
+            //is the head of this line
             if(newline==1){
+                //col 1 : Text record
                 object_program[lines][0] = 'T';
-                //starting address (1-6)
+                //col 1-6 : starting address
                 sprintf(&object_program[lines][1],"%06X",start_address);
+                //col 7-8 : Length of object code in this record in bytes
+                sprintf(&object_program[lines][7],"%02X",0);//initialize length to 00, later count it real length
                 col=9;
-                newline=0;
+                newline=0;//not the head
             }
             if(strcmp(operand[i],"\t")!=0){
-                operand_num = search_opcode_address(operand[i],label,address,opcode_table_n);
+                operand_num = search_address(operand[i],label,address,opcode_table_n);
                 if(operand_num==-1) {
                     int node=-1;
                     for(int j=0;j<strlen(operand[i]);j++){
@@ -410,7 +436,7 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
                         char *p = strtok(operand[i], ",");
 
                         //printf("%s\n",operand[i] );
-                        operand_num = search_opcode_address(p,label,address,opcode_table_n);
+                        operand_num = search_address(p,label,address,opcode_table_n);
                         if(operand_num==-1) operand_num=0;
                         object_code[i] = (opcode_num<<16) + (operand_num+8*4096);
                         strcpy(operand[i],temp);
@@ -446,17 +472,26 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             else {
                 object_code[i] = (opcode_num<<16) ;
                 //printf("object_code[%d]\t:\t%06X \n",i,object_code[i] );
+                //fprintf(fptr_object_code,"object_code[%d]\t:\t%06X \n",i,object_code[i] );
                 sprintf(&object_program[lines][col], "%06X",object_code[i]);
+                if(strcmp(label[i],"\t")==0) {
+                    fprintf(fptr_object_code,"%X\t\t%s\t\t\t%06X\n",address[i],opcode[i],object_code[i]);
+                }
+                else fprintf(fptr_object_code,"%X\t%s\t%s\t\t\t%06X\n",address[i],label[i],opcode[i],object_code[i]);
                 col+=6;
             }
         }
+        //not exsit in opcode table , opcode == BYTE
         else if(strcmp(opcode[i],"BYTE")==0){
             if(newline==1){
+                //col 1 : Text record
                 object_program[lines][0] = 'T';
-                //starting address (1-6)
+                //col 1-6 : starting address
                 sprintf(&object_program[lines][1],"%06X",start_address);
+                //col 7-8 : Length of object code in this record in bytes
+                sprintf(&object_program[lines][7],"%02X",0);//initialize length to 00, later count it real length
                 col=9;
-                newline=0;
+                newline=0;//not the head
             }
             int shift=0;
             char string_copy_temp[100];
@@ -519,11 +554,14 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
         }
         else if(strcmp(opcode[i],"WORD")==0){
             if(newline==1){
+                //col 1 : Text record
                 object_program[lines][0] = 'T';
-                //starting address (1-6)
+                //col 1-6 : starting address
                 sprintf(&object_program[lines][1],"%06X",start_address);
+                //col 7-8 : Length of object code in this record in bytes
+                sprintf(&object_program[lines][7],"%02X",0);//initialize length to 00, later count it real length
                 col=9;
-                newline=0;
+                newline=0;//not the head
             }
             object_code[i] = ((int)strtol(operand[i], NULL, 10));
             //printf("object_code[%d]\t:\t%06X \n",i,object_code[i] );
@@ -534,8 +572,6 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             }
             else fprintf(fptr_object_code,"%X\t%s\t%s\t%s\t\t%06X\n",address[i],label[i],opcode[i],operand[i],object_code[i]);
 
-            //printf("col %d\n",col );
-            //printf("object_program : %s\n",object_program[lines] );
         }
         else{
             printf("%d\n",col );
@@ -555,65 +591,34 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             //length (7-8)
             char string_copy_temp[100];
             int len = address[i]-start_address;
-            //printf("len %X\n",len);
-            //printf("1 address : %X start_address : %X\n",address[i],start_address );
 
-            //itoa(len,string_copy_temp,16);
             sprintf(string_copy_temp,"%02X",len);
-            //printf("%s\n",string_copy_temp);
             for(int k=0;k<2;k++){
                 object_program[lines][k+7] = string_copy_temp[k];
             }
-            //printf("%s\n",object_program[lines]);
             fprintf(fptr_object_program, "%s\n",object_program[lines]);
-            //initialize first text record
-            //printf("1 initialize first text record\n");
             lines++;
-            //start = 8;
-            //start_col = 8;
             start_address = address[i+1];
             printf("address i   : %06X\n",address[i]);
             printf("address i+1 : %06X\n",address[i+1]);
             newline=1;
             col=9;
-            /*
-            object_program[lines][0] = 'T';
-            //starting address (1-6)
-            sprintf(&object_program[lines][1],"%06X",address[i+1]);
-            col=9;*/
             continue;
         }
         if(col+6>69){
-            //printf("address : %X\n",address[i] );
             //length (7-8)
             char string_copy_temp[100];
             int len = address[i+1]-start_address;
-            //printf("len %X\n",len );
-            //printf("address : %X start_address : %X\n",address[i+1],start_address );
-            //itoa(len,string_copy_temp,16);
             sprintf(string_copy_temp,"%02X",len);
             for(int k=0;k<2;k++){
                 object_program[lines][k+7] = string_copy_temp[k];
             }
-            //printf("%s\n",object_program[lines]);
             fprintf(fptr_object_program, "%s\n",object_program[lines]);
-            //initialize first text record
-            //printf("2 initialize first text record\n");
-            //printf("col %d\n",col );
             lines++;
-            //start=8;
-            //start_col = 8;
             start_address = address[i+1];
             newline=1;
             col=9;
-            /*
-            object_program[lines][0] = 'T';
-            //starting address (1-6)
-            sprintf(&object_program[lines][1],"%06X",address[i+1]);
-            col=9;*/
         }
-        //printf("------------ i = %d\n",i );
-        //printf("symbol_table_n %d\n",symbol_table_n );
     }
     fclose(fptr_object_code);
     fclose(fptr_object_program);
