@@ -44,6 +44,11 @@ int search_opcode_address(char* ,char (* )[10],int* ,int );
   * int location_counter    : last location
   * int symbol_table_n      : number of lines in source code from START to END */
 void object_program_build(FILE* ,FILE* ,char (* )[10],char (* )[10],char (* )[10],int*,char (* )[10],int*,int,int,int);
+
+int pass_1(FILE*,FILE*,FILE*,char (*)[10],char (* )[10],char (*)[10],char (* )[10],int* ,int,int* );
+int location_count(FILE* ,FILE* ,char (* )[10],char (*)[10],char (*)[10],char (*)[10],int*,int,int*,int);
+
+
 int main(){
     FILE *fptr_source;
     FILE *fptr_opcode;
@@ -85,13 +90,16 @@ int main(){
         //lines in opcode_table
         int opcode_table_n =opcode_table_read(fptr_opcode,opcode_table,opcode_address);
         //lines in source code
-        int n = source_read(fptr_source,label,opcode,operand);
+        //int n = source_read(fptr_source,label,opcode,operand);
         //lines in source code from START to END
-        int symbol_table_n = symbol_table_build(fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,n,&location_counter);
-
+        //int symbol_table_n = symbol_table_build(fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,n,&location_counter);
+        //int symbol_table_n = pass_1();
+        int  symbol_table_n =pass_1(fptr_source, fptr_SYMTAB,fptr_location,label,opcode,operand,opcode_table,address,opcode_table_n,&location_counter);
+        //printf("%d\n",symbol_table_n );
+        //printf("pass 2\n");
         //pass 2
         object_program_build(fptr_object_code,fptr_object_program,label,opcode,operand,address,opcode_table,opcode_address,location_counter,opcode_table_n,symbol_table_n);
-
+        //printf("pass over\n");
         fclose(fptr_source);
         fclose(fptr_opcode);
         return 0;
@@ -160,7 +168,7 @@ int source_read(FILE* fptr_source,char (* label)[10],char (* opcode)[10],char (*
     char* p_label;
     char* p_opcode;
     char* p_operand;
-    while ((read = getline(&line, &len, fptr_source) != -1)){//other line
+    while ((read = getline(&line, &len, fptr_source) != -1)){
         if(line[0]=='/') {continue;}
         if(line[0]=='\t'){              //two block(no label)
             strcpy(label[counter],"\t\0");//label==0
@@ -199,8 +207,162 @@ int source_read(FILE* fptr_source,char (* label)[10],char (* opcode)[10],char (*
             strcpy(operand[counter],"\t\0");
         }
         counter++;
+
     }
     return counter;
+}
+int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address,int opcode_table_n,int* location_counter){
+    size_t len = 0;
+    ssize_t read;
+    int counter = 0;
+    char *line = NULL;
+    char* p_label;
+    char* p_opcode;
+    char* p_operand;
+    while ((read = getline(&line, &len, fptr_source) != -1)){
+        if(line[0]=='/') {continue;}
+        else{
+            if(line[0]=='\t'){              //two block(no label)
+                strcpy(label[counter],"\t\0");//label==0
+                p_opcode = strtok(line,"\t");
+            }
+            else{
+                p_label = strtok(line,"\t");
+                if(p_label){                      //label
+                    Trim(p_label);
+                    strcpy(label[counter], p_label);
+                    //printf("%s\n",label[counter] );
+                    p_opcode=strtok(NULL,"\t");
+                }
+                else{
+                    strcpy(label[counter],"\t\0");
+                    strcpy(opcode[counter],"\t\0");
+                    strcpy(operand[counter],"\t\0");
+                }
+            }
+            if(p_opcode){                  //opcode
+                p_operand=strtok(NULL,"\t");
+                if(p_operand){                      //has operand
+                    Trim(p_opcode);
+                    strcpy(opcode[counter], p_opcode);
+                    Trim(p_operand);
+                    strcpy(operand[counter], p_operand);
+                }
+                else{                      //no operand , no address
+                    Trim(p_opcode);
+                    strcpy(opcode[counter], p_opcode);
+                    strcpy(operand[counter],"\t\0");//no operand
+                }
+            }
+            else{
+                strcpy(opcode[counter],"\t\0");
+                strcpy(operand[counter],"\t\0");
+            }
+            counter++;
+            if(strcmp(opcode[0],"START")==0){
+                *location_counter=(int)strtol(operand[0], NULL, 16);
+                address[0] = *location_counter;
+                //start=1;
+            }
+            if(strcmp(label[0],"\t")==0) {
+                fprintf(fptr_location,"%X\t\t%s\t%s\n",address[0],opcode[0],operand[0] );
+            }
+            else {
+                fprintf(fptr_location,"%X\t%s\t%s\t%s\n",address[0],label[0],opcode[0],operand[0] );
+            }
+            break;
+        }
+    }
+    while ((read = getline(&line, &len, fptr_source) != -1)){
+        if(line[0]=='/') {continue;}
+        if(line[0]=='\t'){              //two block(no label)
+            strcpy(label[counter],"\t\0");//label==0
+            p_opcode = strtok(line,"\t");
+        }
+        else{
+            p_label = strtok(line,"\t");
+            if(p_label){                      //label
+                Trim(p_label);
+                strcpy(label[counter], p_label);
+                //printf("%s\n",label[counter] );
+                p_opcode=strtok(NULL,"\t");
+            }
+            else{
+                strcpy(label[counter],"\t\0");
+                strcpy(opcode[counter],"\t\0");
+                strcpy(operand[counter],"\t\0");
+            }
+        }
+        if(p_opcode){                  //opcode
+            p_operand=strtok(NULL,"\t");
+            if(p_operand){                      //has operand
+                Trim(p_opcode);
+                strcpy(opcode[counter], p_opcode);
+                Trim(p_operand);
+                strcpy(operand[counter], p_operand);
+            }
+            else{                      //no operand , no address
+                Trim(p_opcode);
+                strcpy(opcode[counter], p_opcode);
+                strcpy(operand[counter],"\t\0");//no operand
+            }
+        }
+        else{
+            strcpy(opcode[counter],"\t\0");
+            strcpy(operand[counter],"\t\0");
+        }
+        location_count(fptr_SYMTAB,fptr_location,label,opcode,operand, opcode_table,address,opcode_table_n,location_counter,counter);
+        counter++;
+    }
+    fclose(fptr_location);
+    fclose(fptr_SYMTAB);
+    return counter;
+}
+int location_count(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address,int opcode_table_n,int* location_counter,int i){
+        if(strcmp(opcode[i],"END")==0) {
+            fprintf(fptr_location,"\t\t%s\t%s\n",opcode[i],operand[i] );
+            return -1;
+        }
+        //other line
+        address[i] = *location_counter;
+        if(strcmp(label[i],"\t")!=0 ) fprintf(fptr_SYMTAB,"%s\t%X\n",label[i],address[i]);
+        //label ___________________________________________________________label
+        if((strcmp(label[i],"\t")!=0) && (search(label[i],label,i)==1)){//label is exsit
+            printf("error\n");
+            printf("lebal is exsist\n");
+            return -2;
+        }
+        //LOC ___________________________________________________________LOC
+        if(search(opcode[i],opcode_table,opcode_table_n)==1){
+            *location_counter+=3;
+        }
+        else if (strcmp(opcode[i],"WORD")==0){
+            *location_counter+=3;
+        }
+        else if (strcmp(opcode[i],"RESW")==0){
+            *location_counter+= 3*((int)strtol(operand[i], NULL, 10));
+        }
+        else if (strcmp(opcode[i],"RESB")==0){
+            *location_counter+= (int)strtol(operand[i], NULL, 10);
+        }
+        else if (strcmp(opcode[i],"BYTE")==0){
+            int len=0;
+            if(operand[i][0]=='C') len = strlen(operand[i])-3;
+            else if(operand[i][0]=='X') len = (strlen(operand[i])-3)/2;
+            *location_counter+= len;
+        }
+        else{
+            printf("error\n");
+            printf("opcode %s not exsist\n",opcode[i]);
+            return -2;
+        }
+        if(strcmp(label[i],"\t")==0) {
+            fprintf(fptr_location,"%X\t\t%s\t%s\n",address[i],opcode[i],operand[i] );
+        }
+        else {
+            fprintf(fptr_location,"%X\t%s\t%s\t%s\n",address[i],label[i],opcode[i],operand[i] );
+        }
+        return 0;
 }
 int symbol_table_build(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],char (* opcode)[10],char (* operand)[10],char (* opcode_table)[10],int* address,int opcode_table_n,int n,int* location_counter){
     int start=0;
@@ -214,8 +376,6 @@ int symbol_table_build(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[10],
     int i=start;
     for(;i<n;){
         address[i] = *location_counter;
-        printf("head address %X\n",address[i]);
-        printf("%p\n",&address[i] );
         if(strcmp(label[i],"\t")!=0 ) fprintf(fptr_SYMTAB,"%s\t%X\n",label[i],address[i]);
         //label ___________________________________________________________label
         if((strcmp(label[i],"\t")!=0) && (search(label[i],label,i)==1)){//label is exsit
@@ -278,12 +438,13 @@ int search_opcode_address(char* str,char (* table)[10],int* address,int opcode_t
     return -1;
 }
 void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[10],char (* opcode)[10],char (* operand)[10],int* address,char (* opcode_table)[10],int* opcode_address,int location_counter,int opcode_table_n,int symbol_table_n){
+    //printf("%d\n",symbol_table_n );
     int start=0,lines=0;
     int opcode_num;
     int operand_num;
     char object_program[100][100];
     int object_code[100];
-
+    int newline=0;
     //first line
     if(strcmp(opcode[0],"START")==0){
         start=1;
@@ -315,10 +476,46 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
     sprintf(&object_program[lines][1],"%06X",address[start]);
     sprintf(&object_program[lines][7],"%02X",0);
     col=9;
-
     for(int i=start;;i++){
+        if(i==symbol_table_n-1){
+            if(strcmp(label[i],"\t")==0) {
+                fprintf(fptr_object_code,"\t\t%s\t%s\n",opcode[i],operand[i]);
+            }
+            else fprintf(fptr_object_code,"\t%s\t%s\t%s\n",label[i],opcode[i],operand[i]);
+            //printf("in\n");
+            object_code[i]=-1;
+            char string_copy_temp[100];
+            int len = location_counter-start_address;
+            //printf("len %X\n",len );
+            //printf("address : %X start_address : %X\n",location_counter,start_address );
+            //itoa(len,string_copy_temp,16);
+            sprintf(string_copy_temp,"%02X",len);
+            for(int k=0;k<2;k++){
+                object_program[lines][k+7] = string_copy_temp[k];
+            }
+            //printf("%s\n",object_program[lines]);
+            fprintf(fptr_object_program, "%s\n",object_program[lines]);
+            lines++;
+            //start=8;
+            //start_col = 8;
+            object_program[lines][0] = 'E';
+            //starting address (1-6)
+            sprintf(&object_program[lines][1],"%06X",address[0]);
+            //printf("%s\n",object_program[lines]);
+            fprintf(fptr_object_program, "%s\n",object_program[lines]);
+
+            break;
+        }
+        //printf("i  = %d\n",i );
         opcode_num = search_opcode_address(opcode[i],opcode_table,opcode_address,opcode_table_n);
         if(opcode_num!=-1){
+            if(newline==1){
+                object_program[lines][0] = 'T';
+                //starting address (1-6)
+                sprintf(&object_program[lines][1],"%06X",start_address);
+                col=9;
+                newline=0;
+            }
             if(strcmp(operand[i],"\t")!=0){
                 operand_num = search_opcode_address(operand[i],label,address,opcode_table_n);
                 if(operand_num==-1) {
@@ -348,7 +545,8 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
                         //printf("%X\n",object_code[i]);
                     }
                     else {
-                        printf("error\n");
+                        printf("%d %X\t%s\t%s\n",i,address[i],label[i],opcode[i]);
+                        printf("1 error\n");
                         return ;
                     }
                 }
@@ -377,6 +575,13 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             }
         }
         else if(strcmp(opcode[i],"BYTE")==0){
+            if(newline==1){
+                object_program[lines][0] = 'T';
+                //starting address (1-6)
+                sprintf(&object_program[lines][1],"%06X",start_address);
+                col=9;
+                newline=0;
+            }
             int shift=0;
             char string_copy_temp[100];
             char temp[100];
@@ -438,6 +643,13 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             //printf("object_code[%d]\t:\t%06X \n",i,object_code[i] );
         }
         else if(strcmp(opcode[i],"WORD")==0){
+            if(newline==1){
+                object_program[lines][0] = 'T';
+                //starting address (1-6)
+                sprintf(&object_program[lines][1],"%06X",start_address);
+                col=9;
+                newline=0;
+            }
             object_code[i] = ((int)strtol(operand[i], NULL, 10));
             //printf("object_code[%d]\t:\t%06X \n",i,object_code[i] );
             sprintf(&object_program[lines][col],"%06X",object_code[i]);
@@ -451,9 +663,18 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             //printf("object_program : %s\n",object_program[lines] );
         }
         else{
+            printf("%d\n",col );
+            if(strcmp(label[i],"\t")==0) {
+                printf("%X\t\t%s\t%s\t\t%06X\n",address[i],opcode[i],operand[i],object_code[i]);
+            }
+            else printf("%X\t%s\t%s\t%s\t\t%06X\n",address[i],label[i],opcode[i],operand[i],object_code[i]);
+            if(strcmp(label[i],"\t")==0) {
+                fprintf(fptr_object_code,"%X\t\t%s\t%s\n",address[i],opcode[i],operand[i]);
+            }
+            else fprintf(fptr_object_code,"%X\t%s\t%s\t%s\n",address[i],label[i],opcode[i],operand[i]);
             if(col==9){
+                printf("start_address %06X\n",start_address );
                 start_address = address[i+1];
-                object_code[i]=-1;
                 continue;
             }
             //length (7-8)
@@ -476,10 +697,15 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             //start = 8;
             //start_col = 8;
             start_address = address[i+1];
+            printf("address i   : %06X\n",address[i]);
+            printf("address i+1 : %06X\n",address[i+1]);
+            newline=1;
+            col=9;
+            /*
             object_program[lines][0] = 'T';
             //starting address (1-6)
             sprintf(&object_program[lines][1],"%06X",address[i+1]);
-            col=9;
+            col=9;*/
             continue;
         }
         if(col+6>69){
@@ -503,34 +729,16 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             //start=8;
             //start_col = 8;
             start_address = address[i+1];
+            newline=1;
+            col=9;
+            /*
             object_program[lines][0] = 'T';
             //starting address (1-6)
             sprintf(&object_program[lines][1],"%06X",address[i+1]);
-            col=9;
+            col=9;*/
         }
-        if(i==symbol_table_n-1){
-            object_code[i]=-1;
-            char string_copy_temp[100];
-            int len = location_counter-start_address;
-            //printf("len %X\n",len );
-            //printf("address : %X start_address : %X\n",location_counter,start_address );
-            //itoa(len,string_copy_temp,16);
-            sprintf(string_copy_temp,"%02X",len);
-            for(int k=0;k<2;k++){
-                object_program[lines][k+7] = string_copy_temp[k];
-            }
-            //printf("%s\n",object_program[lines]);
-            fprintf(fptr_object_program, "%s\n",object_program[lines]);
-            lines++;
-            //start=8;
-            //start_col = 8;
-            object_program[lines][0] = 'E';
-            //starting address (1-6)
-            sprintf(&object_program[lines][1],"%06X",address[0]);
-            //printf("%s\n",object_program[lines]);
-            fprintf(fptr_object_program, "%s\n",object_program[lines]);
-            break;
-        }
+        //printf("------------ i = %d\n",i );
+        //printf("symbol_table_n %d\n",symbol_table_n );
     }
     fclose(fptr_object_code);
     fclose(fptr_object_program);
