@@ -15,12 +15,13 @@ int search(char* ,char (* )[50],int);
 int opcode_table_read(FILE* ,char (* )[50],int* );
 
 /** pass_1()
+  * int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[50],char (* opcode)[50],char (* operand)[50],char (* opcode_table)[50],int* address,int opcode_table_n,int* location_counter)
   * build a symbol table with location and write in symbol_table.txt(fptr_SYMTAB)
-  * symbol table            : char (* label)[50],char (* opcode)[50],char (* operand)[50],char (* opcode_table)[50],int* address
   * int opcode_table_n      : number of lines in opcode table
   * int n                   : number of lines in source code
   * int* location_counter   : after this function, location_counter == last location
-  * return                  : the number of lines in opcode_table from START to END */
+  * return                  : the number of lines in opcode_table from START to END
+  * location_count()        : count location, write in symbol table,location.txt */
 int pass_1(FILE*,FILE*,FILE*,char (*)[50],char (* )[50],char (*)[50],char (* )[50],int* ,int,int* );
 int location_count(FILE* ,FILE* ,char (* )[50],char (*)[50],char (*)[50],char (*)[50],int*,int,int*,int);
 
@@ -29,8 +30,8 @@ int location_count(FILE* ,FILE* ,char (* )[50],char (*)[50],char (*)[50],char (*
   * search a string(char* str) in a table (char (* table)[50]), if exsit return its location(address[x]), else return -1; */
 int search_address(char* ,char (* )[50],int* ,int );
 
-/** object_program_build()
-  * void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n)
+/** pass_2()
+  * void pass_2(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n)
   * make a source program with location and object code to object_code.txt(FILE* fptr_object_code),
   * and make a object program to object_program.txt(FILE* fptr_object_program)
 
@@ -39,7 +40,7 @@ int search_address(char* ,char (* )[50],int* ,int );
 
   * int location_counter    : last location
   * int n      : number of lines in source code from START to END */
-void object_program_build(FILE* ,FILE* ,char (* )[50],char (* )[50],char (* )[50],int*,char (* )[50],int*,int,int,int);
+void pass_2(FILE* ,FILE* ,char (* )[50],char (* )[50],char (* )[50],int*,char (* )[50],int*,int,int,int);
 
 
 int main(){
@@ -63,8 +64,6 @@ int main(){
     //opcode table
     char opcode_table[100][50];
     int opcode_address[100];
-
-
 
     fptr_source = fopen("source.txt","r");
     fptr_opcode = fopen("opcode.txt","r");
@@ -94,7 +93,7 @@ int main(){
         //object code
         int object_code[n];
         char object_program[n][100];
-        object_program_build(fptr_object_code,fptr_object_program,label,opcode,operand,address,opcode_table,opcode_address,location_counter,opcode_table_n,n);
+        pass_2(fptr_object_code,fptr_object_program,label,opcode,operand,address,opcode_table,opcode_address,location_counter,opcode_table_n,n);
         //printf("pass over\n");
         fclose(fptr_source);
         fclose(fptr_opcode);
@@ -129,7 +128,7 @@ void Trim(char *src){
 int search(char* str,char (* table)[50],int n){
     for(int i=0;i<n;i++){
         if(strcmp(str,table[i])==0){
-            return 1;
+            return 1;//exsit in table
         }
     }
     return 0;
@@ -141,7 +140,7 @@ int opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[50],int* opcode_ad
     char* p;
     int counter=0;
     while ((read = getline(&line, &len, fptr_opcode) != -1)){
-        p = strtok(line," ");
+        p = strtok(line," ");//split line by " "
         if(p){
             strcpy(opcode_table[counter],p);
             p = strtok(NULL," ");
@@ -149,7 +148,6 @@ int opcode_table_read(FILE* fptr_opcode,char (* opcode_table)[50],int* opcode_ad
                 opcode_address[counter++]=(int)strtol(p, NULL, 16);
             }
         }
-        //printf("%s\t%s\n",opcode_table[counter-1],opcode_address[counter-1]);
     }
     if (line){
         free(line);
@@ -195,10 +193,7 @@ int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label
                     strcpy(operand[counter],"\t\0");//no operand
                 }
             }
-            else{                         //no operand , no address
-                strcpy(opcode[counter],"\t\0");
-                strcpy(operand[counter],"\t\0");
-            }
+
             if(strcmp(opcode[0],"START")==0){//opcode ==START
                 *location_counter=(int)strtol(operand[0], NULL, 16);
                 address[0] = *location_counter;
@@ -206,6 +201,7 @@ int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label
             else{                            //NO START
                 *location_counter=0;
                 address[0] = 0;
+                //NOT START -> need to count next location
                 int result = location_count(fptr_SYMTAB,fptr_location,label,opcode,operand, opcode_table,address,opcode_table_n,location_counter,counter);
                 printf("location_counter %X\n",*location_counter );
                 if(result==-1) return counter+1;
@@ -250,13 +246,11 @@ int pass_1(FILE* fptr_source,FILE* fptr_SYMTAB,FILE* fptr_location,char (* label
                 strcpy(operand[counter],"\t\0");//no operand
             }
         }
-        else{
-            strcpy(opcode[counter],"\t\0");
-            strcpy(operand[counter],"\t\0");
-        }
+
+        //count next location
         int result = location_count(fptr_SYMTAB,fptr_location,label,opcode,operand, opcode_table,address,opcode_table_n,location_counter,counter);
+        //is END line
         if(result==-1) return counter+1;
-        //if(result==-2) return 0;
         counter++;
     }
     fclose(fptr_location);
@@ -269,8 +263,7 @@ int location_count(FILE* fptr_SYMTAB,FILE* fptr_location,char (* label)[50],char
             return -1;
         }
         address[i] = *location_counter;
-        //printf("%s\n",opcode[i] );
-        //printf("address %d %X\n",i,*location_counter );
+
         //label ___________________________________________________________label
         //if label[i] not tab -> write label[i] and address[i] into symbol_table.txt
         if(strcmp(label[i],"\t")!=0 ) fprintf(fptr_SYMTAB,"%s\t%X\n",label[i],address[i]);
@@ -323,7 +316,7 @@ int search_address(char* str,char (* table)[50],int* address,int opcode_table_n)
     }
     return -1;//str not exsit in table
 }
-void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n){
+void pass_2(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n){
     /** start           : start line, if first line's opcode is START,then start=1
       * lines           : at object program's which line
       * opcode_num      : use search_address() search opcode in opcode table
@@ -585,7 +578,7 @@ void object_program_build(FILE* fptr_object_code,FILE* fptr_object_program,char 
             }
             else fprintf(fptr_object_code,"%04X\t%s\t%s\t%s\n",address[i],label[i],opcode[i],operand[i]);
             if(col==9){//this lines still is empty -> next line
-                printf("start_address %06X\n",start_address );
+                //printf("start_address %06X\n",start_address );
                 start_address = address[i+1];
                 continue;
             }
