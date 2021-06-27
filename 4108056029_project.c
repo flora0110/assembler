@@ -34,10 +34,8 @@ int search_address(char* ,char (* )[50],int* ,int );
   * void pass_2(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address,char (* opcode_table)[50],int* opcode_address,int location_counter,int opcode_table_n,int n)
   * make a source program with location and object code to object_code.txt(FILE* fptr_object_code),
   * and make a object program to object_program.txt(FILE* fptr_object_program)
-
   * symbol table            : char (* label)[50],char (* opcode)[50],char (* operand)[50],int* address
   * opcode table            : char (* opcode_table)[50],int* opcode_address
-
   * int location_counter    : last location
   * int n      : number of lines in source code from START to END */
 void pass_2(FILE* ,FILE* ,char (* )[50],char (* )[50],char (* )[50],int*,char (* )[50],int*,int,int,int);
@@ -499,6 +497,9 @@ void pass_2(FILE* fptr_object_code,FILE* fptr_object_program,char (* label)[50],
                 char char_temp[2];//each char's ascii code in two byte
                 char object_code_string[100];//word's object code in string
                 int k= ((strlen(operand[i])-3)<<1) -1;//last char's position
+                for(int j=0;j<k;j++){
+                    object_program[lines][col+j] ='0';
+                }
                 for(int j=strlen(operand[i])-2;operand[i][j]!='\'';j--){//char in ' '
                     sprintf(char_temp,"%02X",operand[i][j]);            //operand[i][j](char) -> int(hex) -> string(char_temp)
                     object_program[lines][k+col] = char_temp[1];
